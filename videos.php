@@ -2,10 +2,27 @@
   include("connection.php");
   include("functions.php");
   require "header.php";
+  // ini_set('display_errors', '1');
+  // ini_set('display_startup_errors', '1');
+  // error_reporting(E_ALL);
   if(isset($_SESSION)){
     session_start();
   $query = "select * from videos order by `videos`.`adding_date` desc;";
   $query_run = mysqli_query($connection, $query);
+}
+if(isset($_POST['submit-search'])){
+  $search = mysqli_real_escape_string($connection,$_POST["searchTxt"]);
+  $words = explode(" ", $search);
+  $query = "select * from videos where `title` like '%$search%' or `description` like '%$search%' or `keywords` like '%$search%' ";
+  foreach ($words as $word) {
+    $query .= "or `title` like '%$word%' or `description` like '%$word%' or `keywords` like '%$word%'";
+  }
+  $query_video .= "order by `videos`.`adding_date` desc;";
+  $query_run = mysqli_query($connection, $query);
+  if(mysqli_num_rows($query_run) == 0){
+    $_SESSION["message"] = "No video was found!";
+    $_SESSION["msg_type"] = "danger";
+  }
 }
  ?>
 
@@ -14,7 +31,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Account</title>
+  <title>Watch</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -104,17 +121,30 @@
             </ul>
           </li>
         </ul>
-        <form class="d-flex" action="search.php" role="search" method="post">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-          <button class="btn btn-outline-dark" type="submit">Search</button>
+        <form class="d-flex" role="search" method="post">
+          <input class="form-control me-2" type="search" name="searchTxt" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-dark" name="submit-search" type="submit">Search</button>
         </form>
       </div>
     </div>
   </nav>
+  <?php if (isset($_SESSION["message"])){ ?>
+  <div class="alert alert-<?=$_SESSION['msg_type']?> alert-dismissible fade show" role="alert">
+    <strong>
+      <h3 class="alert-heading"><?php echo $_SESSION['message'];?>
+      </h3>
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <?php
+                unset($_SESSION['message']);?>
+  <?php
+              }
+              ?>
   <div class="videos-gallery">
     <?php
     while ($row = mysqli_fetch_array($query_run)) {
-      if ($row["is_private"]) {
+      if ($row["is_private"] || !$row["validated"]) {
           continue;
         }
 
@@ -123,7 +153,7 @@
     <div class="container">
       <div class="main-video">
         <div class="video">
-          <video height="400" width="800" src="videos/<?php echo $row['video']; ?>" controls muted autoplay>
+          <video height="400" width="800" src="<?php echo $row['video']; ?>" controls muted autoplay>
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -134,20 +164,20 @@
           ?>
       <div class="video-list">
         <div class="vid active">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
         <?php
         while ($row = mysqli_fetch_array($query_run)) {
-          if ($row["is_private"]) {
+          if ($row["is_private"] || !$row["validated"]) {
               continue;
             }
 
 
          ?>
         <div class="vid">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -185,7 +215,7 @@
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>

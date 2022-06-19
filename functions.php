@@ -51,7 +51,7 @@ function delete_user($connection,$id,$is_supplier){
   echo $id;
   mysqli_query($connection,$query);
   if(!$is_supplier){
-    $_SESSION["message"] = "User has been deleted";
+    $_SESSION["message"] = "Subscription was declined";
     $_SESSION["msg_type"] = "danger";
     header("Location: admin.php");
   }
@@ -71,7 +71,7 @@ function delete_user($connection,$id,$is_supplier){
       $query = "insert into suppliers (email,password,username,f_name,l_name) values ('$email','$password','$username','$name','$f_name')";
       mysqli_query($connection,$query);
       delete_user($connection,$id,1);
-      $_SESSION["message"] = "User has been added";
+      $_SESSION["message"] = "Supplier has been added";
       $_SESSION["msg_type"] = "success";
       header("Location: admin.php");
       die();
@@ -93,6 +93,8 @@ function delete_user($connection,$id,$is_supplier){
     mysqli_query($connection,$query);
     $query2 = "select is_admin from suppliers where id=$id;";
     $result = mysqli_query($connection,$query2);
+    $_SESSION["message"] = "Video deleted";
+    $_SESSION["msg_type"] = "danger";
     if($result){
       header("Location: admin.php");
     }

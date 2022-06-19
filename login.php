@@ -113,11 +113,11 @@
       </div>
     </div>
 
-    <div class="checkbox mb-3">
+    <!-- <div class="checkbox mb-3">
       <label>
         <input type="checkbox" value="remember-me"> Remember me
       </label>
-    </div>
+    </div> -->
     <button class="w-100 btn btn-lg btn-primary" name="submit" >Login</button>
 
   </form>
@@ -149,7 +149,7 @@
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>

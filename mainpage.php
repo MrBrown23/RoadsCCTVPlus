@@ -2,6 +2,10 @@
 include("connection.php");
 include("functions.php");
 session_start();
+// ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
+
 if(!isset($_SESSION["user_id"])){
   header("Location: login.php");
 }
@@ -10,6 +14,7 @@ else {
     header("Location: admin.php");
 }
 else {
+
   if(isset($_POST["submit"]) && isset($_FILES["my_video"])){
     print_r($_FILES["my_video"]);
     $name = $_FILES["my_video"]["name"];
@@ -21,11 +26,32 @@ else {
       echo $video_ex;
     }
   }
+  if(isset($_GET['submit-search'])){
+    $search = mysqli_real_escape_string($connection,$_GET["searchTxt"]);
+    $words = explode(" ", $search);
+    $query_video = "select * from videos where `title` like '%$search%' or `description` like '%$search%' or `keywords` like '%$search%' ";
+    foreach ($words as $word) {
+      $query_video .= "or `title` like '%$word%' or `description` like '%$word%' or `keywords` like '%$word%'";
+    }
+    $query_video .= "order by `videos`.`adding_date` desc;";
+
+    $query_run_s = mysqli_query($connection, $query_video);
+    if(mysqli_num_rows($query_run_s) == 0){
+      $_SESSION["message"] = "No video was found!";
+      $_SESSION["msg_type"] = "danger";
+    }
+
+  }
+  else {
+    $query_video = "select * from videos order by `videos`.`adding_date` desc;";
+    $query_run_s = mysqli_query($connection, $query_video);
+  }
 }
 
 }
 
 ?>
+
 
 <!doctype html>
 <html lang="en">
@@ -37,6 +63,9 @@ else {
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.min.css'></link>
+  <script src="sweetalert2.min.js"></script>
+  <link rel="stylesheet" href="sweetalert2.min.css">
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -135,33 +164,33 @@ else {
             </ul>
           </li>
         </ul>
-        <form class="d-flex" role="search">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-          <button class="btn btn-outline-dark" type="submit">Search</button>
+        <form class="d-flex" role="search" method="get">
+          <input class="form-control me-2" type="search" name="searchTxt" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-dark" name="submit-search" type="submit">Search</button>
         </form>
       </div>
     </div>
   </nav>
 
   <?php if (isset($_SESSION["message"])){ ?>
-  <div class="alert alert-<?=$_SESSION['msg_type']?> alert-dismissible fade show" role="alert">
-    <strong>
-      <h3 class="alert-heading"><?php echo $_SESSION['message'];?>
-      </h3>
-    </strong>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="alert alert-<?=$_SESSION['msg_type']?> alert-dismissible fade show" role="alert">
+  <strong><h3 class="alert-heading"><?php echo $_SESSION['message'];
+
+    ?></h3></strong>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
-  <?php
+            <?php
                 unset($_SESSION['message']);?>
+
   <?php
-              }
-              ?>
+  }
+  ?>
 
 
   <div class="ubody" id="dragAndDrop" hidden>
     <div class="drag-area">
       <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
-      <header>Drag & Drop to Upload Video OR</header>
+      <header>Choose a video and fill the form</header>
 
 
       <!-- =============================================================FORM ==============================================================-->
@@ -172,7 +201,7 @@ else {
       <form action="upload.php?addVideo=<?php echo $_SESSION["user_id"]; ?>" name="videoForm" method="post" enctype="multipart/form-data">
         <input class="form-control form-control-lg" type="file" name="my_video" required>
         <div class="form-floating">
-          <textarea class="form-control" id="exampleFormControlTextarea1" name="text" rows="1" required></textarea>
+          <textarea class="form-control" id="exampleFormControlTextarea1" name="title" rows="1" required></textarea>
           <label for="exampleFormControlTextarea1" class="form-label">Title</label>
         </div>
         <div class="form-floating">
@@ -213,11 +242,14 @@ else {
           if($row["id_supplier"]!=$_SESSION["user_id"]){
             continue;
           }
+          if ($row["validated"]) {
+            continue;
+          }
 
          ?>
         <tr>
           <td>
-            <video src="videos/<?php echo $row["video"]; ?>" height="100" width="200" poster="posterimage.jpg" muted controls>
+            <video src="<?php echo $row["video"]; ?>" height="100" width="200" poster="posterimage.jpg" muted controls>
             </video>
           </td>
           <td><?php echo $row["title"]; ?></td>
@@ -226,8 +258,10 @@ else {
           <td>
             <form class="" method="post">
               <div class="btn-group">
-                <a href="process.php?acceptVideo=<?php echo $row["id"]; ?>" class="w-50 btn btn-primary ">Update</a>
-                <a href="process.php?deleteVideo=<?php echo $row["id"]; ?>" onclick="return confirm('Are you sure you want to delete this?');" class="w-50 btn btn-danger">Delete</a>
+                <a href="updateVideo.php?edit=<?php echo $row["id"]; ?>" class="w-50 btn btn-primary ">Update</a>
+                <button type="button" onclick="confirmDelete(<?php echo $row["id"]; ?>,2);" class="w-50 btn btn-danger text-center">Delete</button>
+
+                <!-- <a href="process.php?deleteVideo=<?php echo $row["id"]; ?>" onclick="return confirm('Are you sure you want to delete this?');" class="w-50 btn btn-danger">Delete</a> -->
               </div>
             </form>
           </td>
@@ -242,22 +276,20 @@ else {
 
     <?php
 
-
-    $query = "select * from videos order by `videos`.`adding_date` desc;";
-    $query_run = mysqli_query($connection, $query);
-    while ($row = mysqli_fetch_array($query_run)) {
-        if ($row["is_private"]) {
+    while ($row = mysqli_fetch_array($query_run_s)) {
+        if ($row["is_private"] || !$row["validated"]) {
           if($row["id_supplier"]!=$_SESSION["user_id"]){
             continue;
           }
           }
+
 
      ?>
     <h3 class="heading">Video gallery</h3>
     <div class="container">
       <div class="main-video">
         <div class="video">
-          <video height="400" width="800" src="videos/<?php echo $row['video']; ?>" controls muted autoplay>
+          <video height="400" width="800" src="<?php echo $row['video']; ?>" controls muted autoplay>
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -270,13 +302,13 @@ else {
           ?>
       <div class="video-list">
         <div class="vid active">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
         <?php
-        while ($row = mysqli_fetch_array($query_run)) {
-          if ($row["is_private"]) {
+        while ($row = mysqli_fetch_array($query_run_s)) {
+          if ($row["is_private"] || !$row["validated"]) {
             if($row["id_supplier"]!=$_SESSION["user_id"]){
               continue;
             }
@@ -284,7 +316,7 @@ else {
 
          ?>
         <div class="vid">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -322,7 +354,7 @@ else {
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>
@@ -330,11 +362,17 @@ else {
     <p>Copyright &copy; 2022 <a href="index.php" class="text-black">RoadesCCTVPlus</a>.</p>
   </footer>
   <script src="/docs/5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="js/mainpage.js"></script>
   <script src="js/uploadvis.js"></script>
   <script src="js/videos.js" type="text/javascript"></script>
+  <script src="js/alerts.js" type="text/javascript "></script>
+
   <script type="text/javascript">
+  if (window.location.href.indexOf("search") > -1){
+    goToWatch();
+  }
     function goToInsert() {
       document.getElementById("insertPage").classList.add("active");
       document.getElementById("dragAndDrop").hidden = false;

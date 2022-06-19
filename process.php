@@ -1,5 +1,8 @@
 <?php
 session_start();
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
   include("connection.php");
   include("functions.php");
   if (isset($_GET["delete"])) {
@@ -23,9 +26,13 @@ session_start();
   if (isset($_GET["deleteVideo"])) {
     $id = $_GET["deleteVideo"];
     delete_video($connection,$id);
-    $_SESSION["message"] = "Video deleted";
-    $_SESSION["msg_type"] = "danger";
-    exit(0);
+
+  }
+  if(isset($_GET["acceptVideo"])){
+    $id = $_GET["acceptVideo"];
+    $query = "UPDATE videos SET validated = '1' WHERE id = $id;";
+    mysqli_query($connection,$query);
+    header("Location: admin.php");
   }
 
 

@@ -2,6 +2,10 @@
   include("connection.php");
   include("functions.php");
   session_start();
+  // ini_set('display_errors', '1');
+  // ini_set('display_startup_errors', '1');
+  // error_reporting(E_ALL);
+
   if(!isset($_SESSION["user_id"])){
     header("Location: login.php");
 }
@@ -11,6 +15,26 @@ else {
   }
 $query = "select * from users;";
 $query_run = mysqli_query($connection, $query);
+if(isset($_GET['submit-search'])){
+
+  $search = mysqli_real_escape_string($connection,$_GET["searchTxt"]);
+  $words = explode(" ", $search);
+  $query_video = "select * from videos where `title` like '%$search%' or `description` like '%$search%' or `keywords` like '%$search%' ";
+  foreach ($words as $word) {
+    $query_video .= "or `title` like '%$word%' or `description` like '%$word%' or `keywords` like '%$word%'";
+  }
+  $query_video .= "order by `videos`.`adding_date` desc;";
+  $query_run_s = mysqli_query($connection, $query_video);
+  if(mysqli_num_rows($query_run_s) == 0){
+    $_SESSION["message"] = "No video was found!";
+    $_SESSION["msg_type"] = "danger";
+  }
+
+}
+else {
+  $query_video = "select * from videos order by `videos`.`adding_date` desc;";
+  $query_run_s = mysqli_query($connection, $query_video);
+}
 }
  ?>
 <!doctype html>
@@ -122,9 +146,9 @@ $query_run = mysqli_query($connection, $query);
           <!-- ALTER TABLE video
 ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
         </ul>
-        <form class="d-flex" role="search">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-          <button class="btn btn-outline-dark" onclick="goTo();" type="submit">Search</button>
+        <form class="d-flex" role="search" method="get">
+          <input class="form-control me-2" type="search" name="searchTxt" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-dark" name="submit-search" type="submit">Search</button>
         </form>
       </div>
     </div>
@@ -198,6 +222,7 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
         $query_run = mysqli_query($connection, $query);
         while ($row = mysqli_fetch_array($query_run)) {
 
+
          ?>
         <tr>
           <td><?php echo $row["f_name"]; ?></td>
@@ -236,11 +261,14 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
         $query = "select * from videos ;";
         $query_run = mysqli_query($connection, $query);
         while ($row = mysqli_fetch_array($query_run)) {
+          if ($row["validated"]) {
+            continue;
+          }
 
          ?>
         <tr>
           <td>
-            <video src="videos/<?php echo $row["video"]; ?>" height="100" width="200" poster="posterimage.jpg" muted controls>
+            <video src="<?php echo $row["video"]; ?>" height="100" width="200" poster="posterimage.jpg" muted controls>
             </video>
           </td>
           <td><?php echo $row["title"]; ?></td>
@@ -250,7 +278,7 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
             <form class="" method="post">
               <div class="btn-group">
                 <a href="process.php?acceptVideo=<?php echo $row["id"]; ?>" class="w-50 btn btn-success ">Accept</a>
-                <a href="process.php?deleteVideo=<?php echo $row["id"]; ?>" onclick="return confirm('Are you sure you want to delete this?');" class="w-50 btn btn-danger">Delete</a>
+                <button type="button" onclick="confirmDelete(<?php echo $row["id"]; ?>,2);" class="w-50 btn btn-danger text-center">Delete</button>
               </div>
             </form>
           </td>
@@ -265,16 +293,15 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
 
     <?php
 
-    $query = "select * from videos order by `videos`.`adding_date` desc;";
-    $query_run = mysqli_query($connection, $query);
-    while ($row = mysqli_fetch_array($query_run)) {
+
+    while ($row = mysqli_fetch_array($query_run_s)) {
 
      ?>
     <h3 class="heading">Video gallery</h3>
     <div class="container">
       <div class="main-video">
         <div class="video">
-          <video height="360" width="640" src="videos/<?php echo $row['video']; ?>" controls muted autoplay>
+          <video height="360" width="640" src="<?php echo $row['video']; ?>" controls muted autoplay>
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -285,16 +312,16 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
           ?>
       <div class="video-list">
         <div class="vid active">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
         <?php
-        while ($row = mysqli_fetch_array($query_run)) {
+        while ($row = mysqli_fetch_array($query_run_s)) {
 
          ?>
         <div class="vid">
-          <video src="videos/<?php echo $row['video']; ?>">
+          <video src="<?php echo $row['video']; ?>">
           </video>
           <h3 class="title"><?php echo $row["title"]; ?></h3>
         </div>
@@ -332,7 +359,7 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>
@@ -353,8 +380,12 @@ ADD FOREIGN KEY (id_supplier) REFERENCES supplier(id); -->
   <script src="js/alerts.js" type="text/javascript ">
   </script>
   <script type="text/javascript">
+
   var pages = ["usersTable","suppliersTable","videosGallery","videosTable"];
   var navLinks = ["usersPage","suppliersPage","videosPage","videosEditPage"];
+  if (window.location.href.indexOf("search") > -1){
+    goTo("videosGallery","videosPage");
+  }
   function goTo(page,navLink){
     for (nl in navLinks) {
       if (navLinks[nl] === navLink) {

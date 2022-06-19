@@ -2,11 +2,40 @@
 include("connection.php");
 include("functions.php");
 session_start();
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 if (isset($_GET["edit"])) {
   $id = $_GET["edit"];
   $query = "select * from suppliers where id=$id;";
   $result = mysqli_query($connection,$query);
   $details = mysqli_fetch_array($result);
+
+}
+if(isset($_POST["submit"])){
+  $id = $_POST["edit"];
+  // echo "string";
+  if (isset($_POST["f_name"])) {
+    $f_name = $_POST['f_name'];
+    $query_new = "UPDATE suppliers SET f_name = '$f_name' WHERE id = $id; ";
+    mysqli_query($connection, $query_new);
+  }
+  if (isset($_POST["l_name"])) {
+    $l_name = $_POST['l_name'];
+    $query_new = "UPDATE suppliers SET l_name = '$l_name' WHERE id = $id; ";
+    mysqli_query($connection, $query_new);
+  }
+  if (isset($_POST["username"])) {
+    $username = $_POST['username'];
+    $query_new = "UPDATE suppliers SET username = '$username' WHERE id = $id; ";
+    mysqli_query($connection, $query_new);
+  }
+  if (isset($_POST["email"])) {
+    $email = $_POST['email'];
+    $query_new = "UPDATE suppliers SET email = '$email' WHERE id = $id; ";
+    mysqli_query($connection, $query_new);
+  }
+  header("Location: admin.php");
 
 }
 
@@ -42,7 +71,7 @@ if (isset($_GET["edit"])) {
       <h2 class="h1-responsive font-weight-bold text-center my-4">Edit user</h2>
     <p class="text-center w-responsive mx-auto mb-5 lead">Be careful when you modify suppliers credentials.</p>
       <form action="update.php" method="post">
-        <input type="text" name="" value="<?php echo $details['id']; ?>" hidden>
+        <input type="text" name="edit" value="<?php echo $details['id']; ?>" hidden>
     <div class="row g-3">
     <div class="col-sm-6">
       <label for="exampleInputEmail1">First name</label>
@@ -58,7 +87,7 @@ if (isset($_GET["edit"])) {
     </div>
     <div class="form-group">
       <label for="exampleInputEmail1">Email address</label>
-      <input type="email" class="form-control" id="exampleInputEmail1" name="email" aria-describedby="emailHelp" value="<?php echo $details['email']; ?>">
+      <input type="email" class="form-control" id="exampleInputEmail1" name="email" aria-describedby="emailHelp" value="<?php echo $details['email'];?>">
     </div>
 
 
@@ -67,15 +96,6 @@ if (isset($_GET["edit"])) {
   </form>
     </div>
 
-    <?php
-    if(isset($_POST["update"])){
-
-      $f_name = $_POST['f_name'];
-      $l_name = $_POST['l_name'];
-      $username =  $_POST['username'];
-      $eamil = $_POST['eamil'];
-    }
-     ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
@@ -104,7 +124,7 @@ if (isset($_GET["edit"])) {
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>

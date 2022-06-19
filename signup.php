@@ -176,7 +176,7 @@
             </div>
             <div class="col-12">
               <label for="email" class="form-label">Renter password</label>
-              <input type="password" class="form-control" id="inputEmail" formControlName="email" id="passwordV" name="passwordV" placeholder="Kr45%d#8" required>
+              <input type="password" class="form-control"  formControlName="email" id="passwordV" name="passwordV" placeholder="Kr45%d#8" required>
               <div class="invalid-feedback" id="checkPassword">
                 Please enter a valid password.
               </div>
@@ -236,7 +236,7 @@
       ></a>
       <a
           class="btn btn-link btn-floating btn-lg text-dark m-1"
-          href="#!"
+          href="https://github.com/MrBrown23/RoadsCCTVPlus"
           role="button"
           data-mdb-ripple-color="dark"
           ><i class="fa-brands fa-github"></i>
@@ -256,11 +256,10 @@
         if(getPass1.value == getPass2.value && getPass1.value != ""){
           document.getElementById("passwordV").classList.remove("is-invalid");
           document.getElementById("passwordV").classList.remove("border-danger");
-          window.alert("Truuuuuuuuuuuuuuuuuuuuuuuue!");
           document.forms["signupForm"].submit();
         }
         else {
-          window.alert("Please enter the same password");
+          // window.alert("Please enter the same password");
           document.getElementById("passwordV").classList.add("is-invalid");
           document.getElementById("passwordV").classList.add("border-danger");
           if(getPass2.value != "")
